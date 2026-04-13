@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프랜차이즈300 체크인</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f6fb;color:#1a1a2e;min-height:100vh}
+.app{max-width:980px;margin:0 auto;padding:1rem}
+.top-bar{background:#1a56a0;color:white;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.top-bar h1{font-size:17px;font-weight:600;margin-bottom:2px}
+.top-bar p{font-size:12px;opacity:.8}
+.sync-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sync-status{font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.4);color:white}
+.sync-status.ok{background:rgba(26,122,60,0.5)}
+.sync-status.err{background:rgba(184,64,64,0.5)}
+.sync-status.loading{background:rgba(255,255,255,0.2)}
+.btn-sync{padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.5);background:transparent;color:white;font-size:12px;cursor:pointer}
+.btn-sync:hover{background:rgba(255,255,255,0.15)}
+.setup-banner{background:#fff3e0;border:1px solid #e8a020;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px;color:#7a4f00}
+.setup-banner strong{display:block;margin-bottom:4px;font-size:14px}
+.setup-banner input{width:100%;margin-top:8px;padding:8px 12px;border:1px solid #e8a020;border-radius:8px;font-size:13px;background:white}
+.btn-save-url{margin-top:8px;padding:7px 14px;background:#1a56a0;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem}
+.stat-card{background:white;border:1px solid #e0e6f0;border-radius:10px;padding:.75rem 1rem;text-align:center}
+.stat-card .lbl{font-size:11px;color:#888;margin-bottom:3px}
+.stat-card .num{font-size:22px;font-weight:600}
+.num-blue{color:#1a56a0}.num-green{color:#1a7a3c}.num-red{color:#b84040}
+.nav{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.nav-btn{padding:7px 14px;border-radius:8px;border:1px solid #d0d8e8;background:white;cursor:pointer;font-size:13px;color:#555}
+.nav-btn.active{background:#1a56a0;color:white;border-color:#1a56a0}
+.search-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.search-row input{flex:1;min-width:160px;padding:9px 13px;border:1px solid #d0d8e8;border-radius:8px;font-size:14px;background:white;outline:none}
+.search-row input:focus{border-color:#1a56a0;box-shadow:0 0 0 3px rgba(26,86,160,0.1)}
+.filter-select{padding:9px 13px;border:1px solid #d0d8e8;border-radius:8px;font-size:13px;background:white;outline:none;cursor:pointer}
+.brand-table{background:white;border:1px solid #e0e6f0;border-radius:12px;overflow:hidden}
+.brand-row{display:grid;grid-template-columns:36px minmax(0,2fr) minmax(0,1.2fr) minmax(0,1fr) 160px;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f0f4f8}
+.brand-row:last-child{border-bottom:none}
+.brand-row.hdr{background:#f8fafc;font-size:11px;color:#888;font-weight:600}
+.brand-row.checked{background:#f0faf4}
+.brand-row.secondary-row{opacity:.4;pointer-events:none}
+.cell-num{font-size:12px;color:#aaa;text-align:center}
+.cell-name{font-size:13px;font-weight:600;color:#1a1a2e;display:flex;flex-direction:column;gap:2px;min-width:0}
+.name-main{display:flex;align-items:center;gap:5px}
+.name-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.name-paired{font-size:11px;color:#b06000;padding-left:12px}
+.green-dot{width:7px;height:7px;border-radius:50%;background:#1a7a3c;flex-shrink:0}
+.pair-badge{font-size:10px;padding:1px 5px;border-radius:4px;background:#fff3e0;color:#b06000;border:1px solid #e8a020;white-space:nowrap;flex-shrink:0}
+.cell-dept{font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-table{font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-action{display:flex;gap:5px;justify-content:flex-end;align-items:center}
+.btn-ci{padding:5px 12px;border-radius:8px;border:1px solid #1a56a0;background:transparent;color:#1a56a0;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn-ci:hover{background:#e8f0fb}
+.btn-ci:disabled{opacity:.4;cursor:not-allowed}
+.btn-cn{padding:5px 9px;border-radius:8px;border:1px solid #c0392b;background:transparent;color:#c0392b;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn-cn:hover{background:#fff0f0}
+.done-txt{font-size:12px;color:#1a7a3c;font-weight:600;white-space:nowrap}
+.no-res{padding:2rem;text-align:center;color:#aaa;font-size:13px}
+.pagination{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:1rem;flex-wrap:wrap}
+.page-btn{padding:5px 10px;border-radius:8px;border:1px solid #d0d8e8;background:white;cursor:pointer;font-size:12px;color:#555}
+.page-btn.active{background:#1a56a0;color:white;border-color:#1a56a0}
+.page-info{font-size:12px;color:#888}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:white;border-radius:14px;padding:1.5rem;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.modal h4{font-size:15px;font-weight:600;margin-bottom:8px}
+.modal p{font-size:13px;color:#666;margin-bottom:1rem;line-height:1.6}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.btn-modal-ok{padding:8px 16px;border-radius:8px;border:none;background:#c0392b;color:white;font-size:13px;cursor:pointer}
+.btn-modal-no{padding:8px 16px;border-radius:8px;border:1px solid #d0d8e8;background:transparent;color:#666;font-size:13px;cursor:pointer}
+.section-dept-hdr{background:#1a56a0;color:white;border-radius:8px;padding:.65rem 1rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center}
+.section-dept-hdr span{font-size:14px;font-weight:600}
+.section-dept-hdr small{font-size:12px;opacity:.8}
+.group-card{background:white;border:1px solid #e0e6f0;border-radius:10px;margin-bottom:.5rem;overflow:hidden}
+.group-hdr{padding:.5rem 1rem;background:#f8fafc;font-size:12px;color:#888;display:flex;justify-content:space-between}
+.group-member{padding:.45rem 1rem;font-size:13px;border-top:1px solid #f0f4f8;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.group-member.checked{background:#f0faf4}
+.member-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.member-main{display:flex;align-items:center;gap:5px;font-weight:600}
+.member-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member-pair{font-size:11px;color:#b06000;padding-left:12px}
+.dept-section{margin-bottom:1.5rem}
+.add-box{background:white;border:1px solid #e0e6f0;border-radius:12px;padding:1.25rem 1.5rem}
+.add-box h3{font-size:14px;font-weight:600;margin-bottom:.5rem}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.form-row input,.form-row select{flex:1;min-width:120px;padding:8px 11px;border:1px solid #d0d8e8;border-radius:8px;font-size:13px;background:white;outline:none}
+.btn-add{padding:8px 16px;background:#1a56a0;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.result-msg{padding:8px 12px;border-radius:8px;font-size:13px;margin-top:6px;display:none}
+.result-msg.ok{background:#f0faf4;color:#1a7a3c;border:1px solid #a8d5b8}
+.result-msg.ng{background:#fff5f5;color:#b84040;border:1px solid #f5c2c2}
+.legend{display:flex;gap:14px;margin-bottom:.75rem;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#888}
+.lg-green{width:8px;height:8px;border-radius:50%;background:#1a7a3c}
+.lg-orange{width:10px;height:10px;border-radius:2px;background:#fff3e0;border:1px solid #e8a020}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:white;padding:10px 20px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+.toast.show{opacity:1}
+@media(max-width:600px){
+  .brand-row{grid-template-columns:28px minmax(0,1fr) 120px}
+  .brand-row .cell-dept,.brand-row .cell-table{display:none}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="top-bar">
+  <div>
+    <h1>가맹하고 싶은 프랜차이즈 300 — 인증서 수여식</h1>
+    <p>2026년 4월 16일 · 체크인 관리 시스템</p>
+  </div>
+  <div class="sync-row">
+    <span class="sync-status loading" id="sync-status">연결 대기중</span>
+    <button class="btn-sync" onclick="syncNow()">지금 동기화</button>
+  </div>
+</div>
+
+<div class="setup-banner" id="setup-banner">
+  <strong>⚙️ Apps Script URL 설정 필요</strong>
+  Google Apps Script 배포 후 Web App URL을 아래에 입력해 주세요.
+  <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/..." />
+  <button class="btn-save-url" onclick="saveScriptUrl()">저장 및 연결</button>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="lbl">사전신청 브랜드</div><div class="num num-blue" id="s-total">0</div></div>
+  <div class="stat-card"><div class="lbl">참석 완료</div><div class="num num-green" id="s-att">0</div></div>
+  <div class="stat-card"><div class="lbl">미도착</div><div class="num num-red" id="s-abs">0</div></div>
+  <div class="stat-card"><div class="lbl">참석률</div><div class="num" id="s-pct">0%</div></div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showView('checkin',this)">체크인</button>
+  <button class="nav-btn" onclick="showView('section',this)">시상 순서표</button>
+  <button class="nav-btn" onclick="showView('add',this)">당일 추가</button>
+</div>
+
+<div id="view-checkin">
+  <div class="search-row">
+    <input type="text" id="search" placeholder="브랜드명 검색..." oninput="onSearch()">
+    <select class="filter-select" id="dept-filter" onchange="onSearch()">
+      <option value="">전체 부문</option>
+      <option value="도소매">도소매</option>
+      <option value="서비스">서비스</option>
+      <option value="외식-소">외식 (50개 미만)</option>
+      <option value="외식-중">외식 (50~100개)</option>
+      <option value="외식-대">외식 (100개 이상)</option>
+    </select>
+    <select class="filter-select" id="att-filter" onchange="onSearch()">
+      <option value="attending">사전신청자만</option>
+      <option value="">전체 300개</option>
+      <option value="checked">참석완료만</option>
+    </select>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="lg-green"></div> 참석 완료</div>
+    <div class="legend-item"><div class="lg-orange"></div> 동일상호 2개 동시 수상</div>
+  </div>
+  <div class="brand-table">
+    <div class="brand-row hdr">
+      <div class="cell-num">No.</div>
+      <div>브랜드명</div>
+      <div class="cell-dept">부문</div>
+      <div class="cell-table">테이블</div>
+      <div style="text-align:right">상태</div>
+    </div>
+    <div id="checkin-body"></div>
+  </div>
+  <div id="pagination" class="pagination"></div>
+</div>
+
+<div id="view-section" style="display:none">
+  <p style="font-size:12px;color:#888;margin-bottom:.75rem">사전 신청 참석자 기준 · 동일상호 2개 브랜드는 앞 브랜드 수여 시 함께 진행</p>
+  <div id="section-body"></div>
+</div>
+
+<div id="view-add" style="display:none">
+  <div class="add-box">
+    <h3>당일 참석 브랜드 추가</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:.75rem">300대 선정 여부를 확인 후 신청 목록에 추가합니다.</p>
+    <div class="form-row">
+      <input type="text" id="add-name" placeholder="브랜드명">
+      <select id="add-dept">
+        <option value="">부문 선택</option>
+        <option value="도소매">도소매</option>
+        <option value="서비스">서비스</option>
+        <option value="외식-소">외식 (50개 미만)</option>
+        <option value="외식-중">외식 (50~100개)</option>
+        <option value="외식-대">외식 (100개 이상)</option>
+      </select>
+      <input type="text" id="add-table" placeholder="테이블 번호" style="max-width:120px">
+      <button class="btn-add" onclick="doAdd()">확인 및 추가</button>
+    </div>
+    <div class="result-msg" id="add-result"></div>
+  </div>
+</div>
+
+</div>
+
+<!-- 체크인 취소 확인 모달 -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h4>체크인 취소</h4>
+    <p id="modal-msg"></p>
+    <div class="modal-btns">
+      <button class="btn-modal-no" onclick="closeModal()">돌아가기</button>
+      <button class="btn-modal-ok" onclick="doCancel()">취소 확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEPT_LABELS={'도소매':'도소매','서비스':'서비스','외식-소':'외식 (50개 미만)','외식-중':'외식 (50~100개)','외식-대':'외식 (100개 이상)'};
+const DEPT_ORDER=['도소매','서비스','외식-소','외식-중','외식-대'];
+const MASTER=["카페요아정", "노모어피자", "육회바른연어", "탕화쿵푸마라탕", "목구멍", "샤브마니아", "한신우동", "보배반점", "피나치공", "비비큐(BBQ)", "맘스터치", "누구나홀딱반한닭", "노랑통닭", "역전할머니맥주1982", "79대포", "귀한족발", "컴포즈커피(COMPOSE COFFEE)", "우지커피(OOZYCOFFEE)", "비에이치씨(BHC)", "한솥", "현대옥", "백소정", "60계", "김복남맥주", "열정국밥", "가마로강정", "육대장", "불닭발땡초동대문엽기떡볶이", "한촌설렁탕", "하이오커피", "포트캔커피 PORT CAN COFFEE", "선비꼬마김밥", "한마음정육식당", "복호두", "본죽&비빔밥", "오복 오봉집", "완미족발", "라홍방 마라탕", "수유리우동집", "이삭토스트", "샐러디", "푸라닭", "PLUS 82(플러스 82)", "두끼", "텐퍼센트스페셜티커피", "포케올데이", "카페인중독", "유가네", "청년피자", "굽네치킨", "153구포국수", "샤브20", "짬뽕관", "삼동소바", "옥된장", "일품대패", "버거리(BURGERRY)", "왓더버거", "더맛있는족발보쌈", "화이트리에", "상무초밥", "국밥생각", "영삼이네우정소갈비", "맛찬들왕소금구이", "마라공방", "아주커", "미카도스시", "송담추어탕", "도야짬뽕", "김종구부산어묵", "솔솥", "북창동순두부", "구도로통닭", "카츠백", "달떡볶이", "아비꼬", "카페인24", "은화수식당", "짬뽕지존", "상록회관 연탄구이", "금화왕돈까스", "맛있는 고기에 솜씨를 더하다", "찌개공방", "피자와썹", "계동치킨", "브라더한정식도시락", "영커피", "커피나인", "스트릿츄러스", "화로상회", "명태어장", "볶음밥도사", "몬스터커피", "둘둘치킨", "맛나감자탕", "명인만두", "도야족발보쌈", "박가부대", "고집센그집갈비탕", "막창도둑", "샤브올데이", "고메스퀘어", "갓잇", "코지하우스", "뭉텅", "다이닝원", "나날이일품돼지국밥", "록갈비", "샹츠마라", "면식당", "보승회관", "담솥", "고향옥얼큰순대국", "거북이동네", "삼덕통닭", "핫브레드", "미도인(味道人)", "달빛에 구운 고등어", "진원 소우", "청년치킨", "팔당원조칼제비", "파이널나인", "비비닭강정", "동양솥밥", "우규", "서대문김치찜&김치찌개", "하르당", "역전국밥", "남도술상", "육회야문연어", "담가 화로구이", "바스버거(BAS BURGER)", "서울깍두기", "양산도", "레코드피자", "옥소반", "온육집", "청담족발", "마녀김밥", "제주스", "시민족발보쌈", "진심왕돈까스", "삼환축산", "까몬(CAMO’N)", "차알(Cha’R)", "매드피자", "보끔당", "도리신닭도리탕", "소표국수", "천년닭강정", "강경불고기", "청주본가", "청담동샤브", "보영만두", "장인닭갈비", "온기정", "파머스포케", "마일로(MILO)", "동남집", "도리당", "라밥", "엠브로돈까스", "첨단돌솥감자탕", "수누리", "밀숲", "쇼쿠지(SHOKUJI)", "벽돌곱창", "응큼떡볶이", "솜리치킨", "구주", "울엄마해장", "탐라순대국감자탕", "드렁킨타이", "정가대박집", "탄광맥주", "멘지", "한사발포차", "삼교리동치미막국수", "벤티버거", "삼송빵집", "순대실록", "부엉이산장", "뜨돈(DD'DON)", "이우철한방누룽지삼계탕", "ADP올데이파스타", "시장을 여는 사람들", "맷돌로만", "규카츠정", "후라토식당", "대한국밥만세", "평화김해뒷고기", "해쉬커피", "강창구찹쌀진순대", "히노아지", "추오정", "오투닭갈비&부대찌개", "나능이", "미스타교자", "덮밥장사장", "호앙비엣", "준오헤어", "아이디헤어", "욜로PC방", "레드버튼(RedButton)", "약손명가", "플랜비 스튜디오", "야옹아멍멍해봐", "더하노이풋앤바디", "투투정비서비스", "하루필름", "통인익스프레스", "폴리어학원", "빅스맘", "카젠", "골프존파크(GOLFZON PARK)", "짱탁구장", "닥터모락", "크린토피아", "책나무", "포토이즘박스", "아소비", "포토이즘컬러드", "루쏘소", "따르릉", "판타스틱 코인 노래연습장", "레디카", "유투엠(U2M)", "돈룩업", "ScentOn(센트온)", "SNPE 바른자세척추운동", "yes2424", "프린트카페(Print cafe)", "공유오피스 슈가맨워크", "구피샵", "장원교육", "카페24창업센터", "리프패럿(LIP Parrot)", "사고력수학 시매쓰", "HOTEL-LAUNDRY 호텔런드리", "아이보람", "아이센스블랙라벨PC존", "월드크리닝", "만화카페 벌툰", "뮤엠영어", "리맥스(RE/MAX)", "작심스터디카페", "플랜A", "XEO HAIR(제오헤어)", "셜록홈즈", "패럴랙스학원", "Olive Young(올리브영)", "씨유(CU)", "한국금거래소", "으뜸플러스안경", "다이소", "고릴라캠핑", "오렌즈", "슈올즈 (ShoeallS)", "다비치안경체인", "워크업", "쉐프엠", "으뜸50안경", "룩옵티컬", "정관장", "마켓무", "펫마트", "시즌글라스(SEASONGLASS)", "소녀폰중고폰", "JINY's(지니스)", "아이스헌터", "글라스미", "AFRICA(아프리카)", "블루25 (Blue25)", "까까주까", "휴대폰성지 옆커폰", "골마켓(Golmarket)", "롤리폴리캔디", "세븐일레븐", "오피스디포(Office DEPOT)", "이마트24(emart24)", "Office Way(오피스웨이)", "렌즈미", "설아아이스크림", "응응스크르", "견생냥품", "아이젠트리(EYE GENTRY)", "캠핑트렁크", "안경,진정성", "이니스프리(innisfree)", "오레시피", "렌즈페이스(LENSFACE)", "델리퀸", "멍냥의민족", "위드렌즈(WID LENS)", "말랑놀이터", "한삼인", "휴베이스약국", "안경매니져", "힙스약국", "막내딸집건어물"];
+const DEVICE_ID = 'device-' + Math.random().toString(36).substr(2,5);
+
+let brands=[{id:1,name:'카페요아정',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:2,name:'노모어피자',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:3,name:'육회바른연어',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:4,name:'탕화쿵푸마라탕',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:5,name:'목구멍',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:6,name:'샤브마니아',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:7,name:'한신우동',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:8,name:'보배반점',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:9,name:'피나치공',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:10,name:'비비큐(BBQ)',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:11,name:'맘스터치',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:12,name:'누구나홀딱반한닭',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:13,name:'노랑통닭',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:14,name:'역전할머니맥주1982',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:15,name:'79대포',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:16,name:'귀한족발',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:17,name:'컴포즈커피(COMPOSE COFFEE)',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:18,name:'우지커피(OOZYCOFFEE)',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:19,name:'비에이치씨(BHC)',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:20,name:'한솥',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:21,name:'현대옥',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:22,name:'백소정',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:23,name:'60계',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:24,name:'김복남맥주',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:25,name:'열정국밥',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:26,name:'가마로강정',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:27,name:'육대장',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:28,name:'불닭발땡초동대문엽기떡볶이',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:29,name:'한촌설렁탕',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:30,name:'하이오커피',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:31,name:'포트캔커피 PORT CAN COFFEE',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:32,name:'선비꼬마김밥',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:33,name:'한마음정육식당',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:34,name:'복호두',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:35,name:'본죽&비빔밥',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:36,name:'오복 오봉집',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:37,name:'완미족발',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:38,name:'라홍방 마라탕',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:39,name:'수유리우동집',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:40,name:'이삭토스트',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:41,name:'샐러디',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:42,name:'푸라닭',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:43,name:'PLUS 82(플러스 82)',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:44,name:'두끼',dept:'외식-대',table:'외식 100개이상 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:45,name:'텐퍼센트스페셜티커피',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:46,name:'포케올데이',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:47,name:'카페인중독',dept:'외식-대',table:'외식 100개이상 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:48,name:'유가네',dept:'외식-대',table:'외식 100개이상 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:49,name:'청년피자',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:50,name:'굽네치킨',dept:'외식-대',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:51,name:'153구포국수',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:52,name:'샤브20',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:53,name:'짬뽕관',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:54,name:'삼동소바',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:55,name:'옥된장',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:56,name:'일품대패',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:57,name:'버거리(BURGERRY)',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:58,name:'왓더버거',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:59,name:'더맛있는족발보쌈',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:60,name:'화이트리에',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:61,name:'상무초밥',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:62,name:'국밥생각',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:63,name:'영삼이네우정소갈비',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:64,name:'맛찬들왕소금구이',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:65,name:'마라공방',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:66,name:'아주커',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:67,name:'미카도스시',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:68,name:'송담추어탕',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:69,name:'도야짬뽕',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:70,name:'김종구부산어묵',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:71,name:'솔솥',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:72,name:'북창동순두부',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:73,name:'구도로통닭',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:74,name:'카츠백',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:75,name:'달떡볶이',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:76,name:'아비꼬',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:77,name:'카페인24',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:78,name:'은화수식당',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:79,name:'짬뽕지존',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:80,name:'상록회관 연탄구이',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:81,name:'금화왕돈까스',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:82,name:'맛있는 고기에 솜씨를 더하다',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:83,name:'찌개공방',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:84,name:'피자와썹',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:85,name:'계동치킨',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:86,name:'브라더한정식도시락',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:87,name:'영커피',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:88,name:'커피나인',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:89,name:'스트릿츄러스',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:90,name:'화로상회',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:91,name:'명태어장',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:92,name:'볶음밥도사',dept:'외식-중',table:'외식 50개이상 100개미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:93,name:'몬스터커피',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:94,name:'둘둘치킨',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:95,name:'맛나감자탕',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:96,name:'명인만두',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:97,name:'도야족발보쌈',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:98,name:'박가부대',dept:'외식-중',table:'외식 50개이상 100개미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:99,name:'고집센그집갈비탕',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:100,name:'막창도둑',dept:'외식-중',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:101,name:'샤브올데이',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:102,name:'고메스퀘어',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:103,name:'갓잇',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:104,name:'코지하우스',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:105,name:'뭉텅',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:106,name:'다이닝원',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:107,name:'나날이일품돼지국밥',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:108,name:'록갈비',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:109,name:'샹츠마라',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:110,name:'면식당',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:111,name:'보승회관',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:112,name:'담솥',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:113,name:'고향옥얼큰순대국',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:114,name:'거북이동네',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:115,name:'삼덕통닭',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:116,name:'핫브레드',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:117,name:'미도인(味道人)',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:118,name:'달빛에 구운 고등어',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:119,name:'진원 소우',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:120,name:'청년치킨',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:121,name:'팔당원조칼제비',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:122,name:'파이널나인',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:123,name:'비비닭강정',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:124,name:'동양솥밥',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:125,name:'우규',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:126,name:'서대문김치찜&김치찌개',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:127,name:'하르당',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:128,name:'역전국밥',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:129,name:'남도술상',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:130,name:'육회야문연어',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:131,name:'담가 화로구이',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:132,name:'바스버거(BAS BURGER)',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:133,name:'서울깍두기',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:134,name:'양산도',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:135,name:'레코드피자',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:136,name:'옥소반',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:137,name:'온육집',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:138,name:'청담족발',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:139,name:'마녀김밥',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:140,name:'제주스',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:141,name:'시민족발보쌈',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:142,name:'진심왕돈까스',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:143,name:'삼환축산',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:144,name:'까몬(CAMO’N)',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:145,name:'차알(Cha’R)',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:146,name:'매드피자',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:147,name:'보끔당',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:148,name:'도리신닭도리탕',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:149,name:'소표국수',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:150,name:'천년닭강정',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:151,name:'강경불고기',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:152,name:'청주본가',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:153,name:'청담동샤브',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:154,name:'보영만두',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:155,name:'장인닭갈비',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:156,name:'온기정',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:157,name:'파머스포케',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:158,name:'마일로(MILO)',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:159,name:'동남집',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:160,name:'도리당',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:161,name:'라밥',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:162,name:'엠브로돈까스',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:163,name:'첨단돌솥감자탕',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:164,name:'수누리',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:165,name:'밀숲',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:166,name:'쇼쿠지(SHOKUJI)',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:167,name:'벽돌곱창',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:168,name:'응큼떡볶이',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:169,name:'솜리치킨',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:170,name:'구주',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:171,name:'울엄마해장',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:172,name:'탐라순대국감자탕',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:173,name:'드렁킨타이',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:174,name:'정가대박집',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:175,name:'탄광맥주',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:176,name:'멘지',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:177,name:'한사발포차',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:178,name:'삼교리동치미막국수',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:179,name:'벤티버거',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:180,name:'삼송빵집',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:181,name:'순대실록',dept:'외식-소',table:'외식 50개 미만 3',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:182,name:'부엉이산장',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:183,name:'뜨돈(DD\'DON)',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:184,name:'이우철한방누룽지삼계탕',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:185,name:'ADP올데이파스타',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:186,name:'시장을 여는 사람들',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:187,name:'맷돌로만',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:188,name:'규카츠정',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:189,name:'후라토식당',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:190,name:'대한국밥만세',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:191,name:'평화김해뒷고기',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:192,name:'해쉬커피',dept:'외식-소',table:'외식 50개 미만 4',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:193,name:'강창구찹쌀진순대',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:194,name:'히노아지',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:195,name:'추오정',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:196,name:'오투닭갈비&부대찌개',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:197,name:'나능이',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:198,name:'미스타교자',dept:'외식-소',table:'외식 50개 미만 2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:199,name:'덮밥장사장',dept:'외식-소',table:'외식 50개 미만 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:200,name:'호앙비엣',dept:'외식-소',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:201,name:'준오헤어',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:202,name:'아이디헤어',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:203,name:'욜로PC방',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:204,name:'레드버튼(RedButton)',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:205,name:'약손명가',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:206,name:'플랜비 스튜디오',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:207,name:'야옹아멍멍해봐',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:208,name:'더하노이풋앤바디',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:209,name:'투투정비서비스',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:210,name:'하루필름',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:211,name:'통인익스프레스',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:212,name:'폴리어학원',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:213,name:'빅스맘',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:214,name:'카젠',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:215,name:'골프존파크(GOLFZON PARK)',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:216,name:'짱탁구장',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:217,name:'닥터모락',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:218,name:'크린토피아',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:219,name:'책나무',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:220,name:'포토이즘박스',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:true,pairRole:'primary',pairedId:222,pairedName:'포토이즘컬러드'},{id:221,name:'아소비',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:222,name:'포토이즘컬러드',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:true,pairRole:'secondary',pairedId:220,pairedName:'포토이즘박스'},{id:223,name:'루쏘소',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:224,name:'따르릉',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:225,name:'판타스틱 코인 노래연습장',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:226,name:'레디카',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:227,name:'유투엠(U2M)',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:228,name:'돈룩업',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:229,name:'ScentOn(센트온)',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:230,name:'SNPE 바른자세척추운동',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:231,name:'yes2424',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:232,name:'프린트카페(Print cafe)',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:233,name:'공유오피스 슈가맨워크',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:234,name:'구피샵',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:235,name:'장원교육',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:236,name:'카페24창업센터',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:237,name:'리프패럿(LIP Parrot)',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:238,name:'사고력수학 시매쓰',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:239,name:'HOTEL-LAUNDRY 호텔런드리',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:240,name:'아이보람',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:241,name:'아이센스블랙라벨PC존',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:true,pairRole:'secondary',pairedId:243,pairedName:'만화카페 벌툰'},{id:242,name:'월드크리닝',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:243,name:'만화카페 벌툰',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:true,pairRole:'primary',pairedId:241,pairedName:'아이센스블랙라벨PC존'},{id:244,name:'뮤엠영어',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:245,name:'리맥스(RE/MAX)',dept:'서비스',table:'서비스1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:246,name:'작심스터디카페',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:247,name:'플랜A',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:248,name:'XEO HAIR(제오헤어)',dept:'서비스',table:'서비스2',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:249,name:'셜록홈즈',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:250,name:'패럴랙스학원',dept:'서비스',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:251,name:'Olive Young(올리브영)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:252,name:'씨유(CU)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:253,name:'한국금거래소',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:254,name:'으뜸플러스안경',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:255,name:'다이소',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:256,name:'고릴라캠핑',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:true,pairRole:'primary',pairedId:260,pairedName:'워크업'},{id:257,name:'오렌즈',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:258,name:'슈올즈 (ShoeallS)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:259,name:'다비치안경체인',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:260,name:'워크업',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:true,pairRole:'secondary',pairedId:256,pairedName:'고릴라캠핑'},{id:261,name:'쉐프엠',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:262,name:'으뜸50안경',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:263,name:'룩옵티컬',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:264,name:'정관장',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:265,name:'마켓무',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:266,name:'펫마트',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:267,name:'시즌글라스(SEASONGLASS)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:268,name:'소녀폰중고폰',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:269,name:'JINY\'s(지니스)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:270,name:'아이스헌터',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:271,name:'글라스미',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:true,pairRole:'primary',pairedId:282,pairedName:'렌즈미'},{id:272,name:'AFRICA(아프리카)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:273,name:'블루25 (Blue25)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:274,name:'까까주까',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:275,name:'휴대폰성지 옆커폰',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:276,name:'골마켓(Golmarket)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:277,name:'롤리폴리캔디',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:278,name:'세븐일레븐',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:279,name:'오피스디포(Office DEPOT)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:280,name:'이마트24(emart24)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:281,name:'Office Way(오피스웨이)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:282,name:'렌즈미',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:true,pairRole:'secondary',pairedId:271,pairedName:'글라스미'},{id:283,name:'설아아이스크림',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:284,name:'응응스크르',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:285,name:'견생냥품',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:286,name:'아이젠트리(EYE GENTRY)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:287,name:'캠핑트렁크',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:288,name:'안경,진정성',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:289,name:'이니스프리(innisfree)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:290,name:'오레시피',dept:'도소매',table:'도소매 1',checked:false,attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:291,name:'렌즈페이스(LENSFACE)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:292,name:'델리퀸',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:293,name:'멍냥의민족',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:294,name:'위드렌즈(WID LENS)',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:295,name:'말랑놀이터',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:296,name:'한삼인',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:297,name:'휴베이스약국',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:298,name:'안경매니져',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:299,name:'힙스약국',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''},{id:300,name:'막내딸집건어물',dept:'도소매',table:'',checked:false,attending:false,isRed:false,pairRole:null,pairedId:null,pairedName:''}];
+let nextId=301;
+let pendingId=null;
+let filtered=[];
+let curPage=1;
+const PAGE_SIZE=30;
+let SCRIPT_URL='';
+let syncTimer=null;
+let isSyncing=false;
+
+// ── URL 설정 ──────────────────────────────
+function saveScriptUrl(){
+  const url=document.getElementById('script-url-input').value.trim();
+  if(!url){alert('URL을 입력해주세요.');return;}
+  SCRIPT_URL=url;
+  localStorage.setItem('scriptUrl',url);
+  document.getElementById('setup-banner').style.display='none';
+  toast('연결 설정 저장됨');
+  syncNow();
+  startAutoSync();
+}
+
+function loadScriptUrl(){
+  const saved=localStorage.getItem('scriptUrl');
+  if(saved){
+    SCRIPT_URL=saved;
+    document.getElementById('setup-banner').style.display='none';
+    return true;
+  }
+  return false;
+}
+
+// ── 동기화 ────────────────────────────────
+function startAutoSync(){
+  if(syncTimer)clearInterval(syncTimer);
+  syncTimer=setInterval(syncNow,5000);
+}
+
+async function syncNow(){
+  if(!SCRIPT_URL||isSyncing)return;
+  isSyncing=true;
+  setSyncStatus('loading','동기화 중...');
+  try{
+    const res=await fetch(SCRIPT_URL+'?action=getAll',{method:'GET'});
+    const data=await res.json();
+    if(data.success&&data.data){
+      applyServerData(data.data);
+      setSyncStatus('ok','동기화됨 '+formatTime(new Date()));
+    } else {
+      setSyncStatus('err','오류: '+( data.message||'알 수 없음'));
+    }
+  } catch(e){
+    setSyncStatus('err','연결 실패');
+  }
+  isSyncing=false;
+}
+
+function applyServerData(serverRows){
+  serverRows.forEach(row=>{
+    const b=brands.find(x=>String(x.id)===String(row.id));
+    if(b){
+      b.checked=(row.checked===true||row.checked==='TRUE'||row.checked==='true');
+      b.attending=true;
+    } else if(row.id>=301){
+      // 당일 추가 브랜드
+      brands.push({
+        id:Number(row.id),name:row.name,dept:row.dept,table:row.table,
+        checked:(row.checked===true||row.checked==='TRUE'),
+        attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''
+      });
+    }
+  });
+  refresh();
+}
+
+function setSyncStatus(type,msg){
+  const el=document.getElementById('sync-status');
+  el.className='sync-status '+type;
+  el.textContent=msg;
+}
+
+function formatTime(d){
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+':'+d.getSeconds().toString().padStart(2,'0');
+}
+
+// ── 체크인 ────────────────────────────────
+async function checkIn(id){
+  const b=getBrand(id);
+  if(!b||b.checked)return;
+
+  // 낙관적 업데이트 (즉시 반영)
+  b.checked=true;b.attending=true;
+  let pairedMsg='';
+  if(b.pairRole==='primary'&&b.pairedId){
+    const paired=getBrand(b.pairedId);
+    if(paired){paired.checked=true;paired.attending=true;pairedMsg=' + '+b.pairedName;}
+  }
+  refresh();
+  toast('체크인 완료 · '+b.name+pairedMsg);
+
+  // 서버 기록
+  if(SCRIPT_URL){
+    try{
+      await fetch(SCRIPT_URL+'?action=checkIn&id='+b.id+'&name='+encodeURIComponent(b.name)+'&device='+DEVICE_ID);
+      if(b.pairRole==='primary'&&b.pairedId){
+        const paired=getBrand(b.pairedId);
+        if(paired) await fetch(SCRIPT_URL+'?action=checkIn&id='+paired.id+'&name='+encodeURIComponent(paired.name)+'&device='+DEVICE_ID);
+      }
+    } catch(e){toast('서버 기록 실패 — 로컬에만 반영됨');}
+  }
+}
+
+function reqCancel(id){
+  const b=getBrand(id);if(!b)return;
+  pendingId=id;
+  let msg='<strong>'+b.name+'</strong> 체크인을 취소하시겠습니까?';
+  if(b.pairRole==='primary'&&b.pairedName)
+    msg+='<br><span style="color:#b06000;font-size:12px">함께 수상하는 '+b.pairedName+'도 취소됩니다.</span>';
+  msg+='<br><span style="color:#b84040;font-size:12px;margin-top:4px;display:block">취소 후 다시 체크인이 가능합니다.</span>';
+  document.getElementById('modal-msg').innerHTML=msg;
+  document.getElementById('modal-bg').classList.add('show');
+}
+
+async function doCancel(){
+  const b=getBrand(pendingId);
+  if(b){
+    b.checked=false;
+    if(b.pairRole==='primary'&&b.pairedId){
+      const paired=getBrand(b.pairedId);
+      if(paired)paired.checked=false;
+    }
+    refresh();toast('취소됨 · '+b.name);
+    if(SCRIPT_URL){
+      try{
+        await fetch(SCRIPT_URL+'?action=cancelCheckIn&id='+b.id+'&name='+encodeURIComponent(b.name)+'&device='+DEVICE_ID);
+        if(b.pairRole==='primary'&&b.pairedId){
+          const paired=getBrand(b.pairedId);
+          if(paired) await fetch(SCRIPT_URL+'?action=cancelCheckIn&id='+paired.id+'&name='+encodeURIComponent(paired.name)+'&device='+DEVICE_ID);
+        }
+      } catch(e){}
+    }
+  }
+  closeModal();
+}
+
+function closeModal(){pendingId=null;document.getElementById('modal-bg').classList.remove('show');}
+function getBrand(id){return brands.find(x=>x.id===id);}
+
+// ── 렌더링 ────────────────────────────────
+function onSearch(){curPage=1;renderCheckin();}
+
+function renderCheckin(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  const df=document.getElementById('dept-filter').value;
+  const af=document.getElementById('att-filter').value;
+  filtered=brands.filter(b=>{
+    if(!b.name.toLowerCase().includes(q))return false;
+    if(df&&b.dept!==df)return false;
+    if(af==='attending'&&!b.attending)return false;
+    if(af==='checked'&&!b.checked)return false;
+    return true;
+  });
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  if(curPage>totalPages)curPage=totalPages;
+  const start=(curPage-1)*PAGE_SIZE;
+  const pageItems=filtered.slice(start,start+PAGE_SIZE);
+  const body=document.getElementById('checkin-body');
+  if(!filtered.length){body.innerHTML='<div class="no-res">검색 결과가 없습니다.</div>';document.getElementById('pagination').innerHTML='';return;}
+  body.innerHTML=pageItems.map((b,i)=>{
+    const isSec=b.pairRole==='secondary';
+    const isPri=b.pairRole==='primary';
+    return `<div class="brand-row ${b.checked?'checked':''} ${isSec?'secondary-row':''}">
+      <div class="cell-num">${start+i+1}</div>
+      <div class="cell-name">
+        <div class="name-main">
+          ${b.checked?'<div class="green-dot"></div>':''}
+          <span>${b.name}</span>
+          ${isPri?'<span class="pair-badge">+1</span>':''}
+          ${isSec?'<span style="font-size:10px;color:#aaa">→ '+b.pairedName+' 수상 시 함께</span>':''}
+        </div>
+        ${isPri&&b.pairedName?'<div class="name-paired">+ '+b.pairedName+'</div>':''}
+      </div>
+      <div class="cell-dept">${DEPT_LABELS[b.dept]||b.dept}</div>
+      <div class="cell-table">${b.table||'-'}</div>
+      <div class="cell-action">
+        ${isSec
+          ?'<span style="font-size:11px;color:#ccc">자동처리</span>'
+          :b.checked
+            ?'<span class="done-txt">참석 완료</span><button class="btn-cn" onclick="reqCancel('+b.id+')">취소</button>'
+            :'<button class="btn-ci" onclick="checkIn('+b.id+')">체크인</button>'}
+      </div>
+    </div>`;
+  }).join('');
+  renderPagination(totalPages);
+}
+
+function renderPagination(total){
+  const pg=document.getElementById('pagination');
+  if(total<=1){pg.innerHTML='';return;}
+  let html='';
+  if(curPage>1)html+='<button class="page-btn" onclick="goPage('+(curPage-1)+')">이전</button>';
+  const s=Math.max(1,curPage-2),e=Math.min(total,curPage+2);
+  for(let i=s;i<=e;i++)html+='<button class="page-btn'+(i===curPage?' active':'')+'" onclick="goPage('+i+')">'+i+'</button>';
+  if(curPage<total)html+='<button class="page-btn" onclick="goPage('+(curPage+1)+')">다음</button>';
+  html+='<span class="page-info">'+curPage+'/'+total+'페이지 ('+filtered.length+'개)</span>';
+  pg.innerHTML=html;
+}
+function goPage(p){curPage=p;renderCheckin();}
+
+function buildGroups(list){
+  const visible=list.filter(b=>b.pairRole!=='secondary');
+  const sorted=[...visible].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const groups=[];let i=0;
+  while(i<sorted.length){
+    const rem=sorted.length-i;
+    if(rem<=8){
+      if(rem===9){groups.push(sorted.slice(i,i+5));groups.push(sorted.slice(i+5));}
+      else if(rem===10){groups.push(sorted.slice(i,i+5));groups.push(sorted.slice(i+5));}
+      else{groups.push(sorted.slice(i));}
+      break;
+    }
+    groups.push(sorted.slice(i,i+8));i+=8;
+  }
+  return groups;
+}
+
+function renderSection(){
+  const body=document.getElementById('section-body');
+  let html='';
+  DEPT_ORDER.forEach(dept=>{
+    const list=brands.filter(b=>b.dept===dept&&b.attending);
+    if(!list.length)return;
+    const groups=buildGroups(list);
+    const visible=list.filter(b=>b.pairRole!=='secondary');
+    const att=visible.filter(b=>b.checked).length;
+    html+='<div class="dept-section"><div class="section-dept-hdr"><span>'+DEPT_LABELS[dept]+'</span><small>'+att+' / '+visible.length+' 수여 완료</small></div>';
+    groups.forEach((grp,gi)=>{
+      const attG=grp.filter(b=>b.checked).length;
+      const totalAwards=grp.reduce((s,b)=>s+(b.pairRole==='primary'?2:1),0);
+      html+='<div class="group-card"><div class="group-hdr"><span>'+(gi+1)+'그룹 · '+grp.length+'팀 (인증서 '+totalAwards+'개)</span><span style="color:'+(attG===grp.length?'#1a7a3c':'#888')+'">'+attG+'/'+grp.length+' 도착</span></div>';
+      html+=grp.map(b=>{
+        const isPri=b.pairRole==='primary';
+        return '<div class="group-member '+(b.checked?'checked':'')+'"><div class="member-left"><div class="member-main">'+(b.checked?'<div class="green-dot"></div>':'')+'<span>'+b.name+'</span>'+(isPri?'<span class="pair-badge">+1</span>':'')+'</div>'+(isPri&&b.pairedName?'<div class="member-pair">+ '+b.pairedName+'</div>':'')+'</div><span style="font-size:11px;color:'+(b.checked?'#1a7a3c':'#aaa')+'">'+( b.checked?'도착':b.table||'')+'</span></div>';
+      }).join('');
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  body.innerHTML=html;
+}
+
+async function doAdd(){
+  const name=document.getElementById('add-name').value.trim();
+  const dept=document.getElementById('add-dept').value;
+  const table=document.getElementById('add-table').value.trim();
+  const res=document.getElementById('add-result');
+  if(!name){showMsg(res,'ng','브랜드명을 입력해주세요.');return;}
+  if(!dept){showMsg(res,'ng','부문을 선택해주세요.');return;}
+  const existing=brands.find(b=>b.name===name);
+  if(existing){
+    if(!existing.attending){
+      existing.attending=true;existing.table=table;
+      refresh();showMsg(res,'ok','"'+name+'" 300대 브랜드 확인 · 목록에 추가했습니다.');
+      toast(name+' 추가 완료');
+      if(SCRIPT_URL){
+        try{ await fetch(SCRIPT_URL+'?action=addBrand&id='+existing.id+'&name='+encodeURIComponent(name)+'&dept='+dept+'&table='+encodeURIComponent(table)+'&device='+DEVICE_ID); }catch(e){}
+      }
+    } else { showMsg(res,'ng','"'+name+'"은 이미 신청 목록에 있습니다.'); }
+    return;
+  }
+  showMsg(res,'ng','300대 선정 브랜드에서 확인되지 않습니다. 관리자 확인 후 추가하세요.');
+}
+
+function showMsg(el,type,txt){el.style.display='block';el.className='result-msg '+type;el.textContent=txt;}
+
+function updateStats(){
+  const att=brands.filter(b=>b.attending&&b.pairRole!=='secondary');
+  const total=att.length;
+  const done=att.filter(b=>b.checked).length;
+  document.getElementById('s-total').textContent=brands.filter(b=>b.attending).length;
+  document.getElementById('s-att').textContent=done;
+  document.getElementById('s-abs').textContent=total-done;
+  document.getElementById('s-pct').textContent=total?Math.round(done/total*100)+'%':'0%';
+}
+
+function refresh(){
+  renderCheckin();
+  if(document.getElementById('view-section').style.display!=='none')renderSection();
+  updateStats();
+}
+
+function showView(v,btn){
+  ['checkin','section','add'].forEach(x=>document.getElementById('view-'+x).style.display='none');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+v).style.display='block';
+  btn.classList.add('active');
+  if(v==='section')renderSection();
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── 초기화 ────────────────────────────────
+if(loadScriptUrl()){
+  syncNow();
+  startAutoSync();
+} else {
+  setSyncStatus('err','URL 미설정');
+}
+refresh();
+</script>
+</body>
+</html>
