@@ -281,11 +281,13 @@ function applyServerData(serverRows){
     if(b){
       b.checked=(row.checked===true||row.checked==='TRUE'||row.checked==='true');
       b.attending=true;
-    } else if(row.id>=301){
-      // 당일 추가 브랜드
+      // 서버에 테이블 번호가 있으면 항상 업데이트
+      if(row.table&&row.table.toString().trim()!=='') b.table=row.table.toString().trim();
+    } else {
+      // 서버에만 있는 브랜드 (당일 추가 포함) → 자동으로 추가
       brands.push({
-        id:Number(row.id),name:row.name,dept:row.dept,table:row.table,
-        checked:(row.checked===true||row.checked==='TRUE'),
+        id:Number(row.id),name:row.name,dept:row.dept,table:row.table||'',
+        checked:(row.checked===true||row.checked==='TRUE'||row.checked==='true'),
         attending:true,isRed:false,pairRole:null,pairedId:null,pairedName:''
       });
     }
