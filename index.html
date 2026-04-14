@@ -191,6 +191,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 </div>
 
+<!-- 테이블 안내 팝업 -->
+<div class="modal-bg" id="table-popup-bg" onclick="closeTablePopup()">
+  <div class="modal" style="text-align:center;max-width:280px" onclick="event.stopPropagation()">
+    <div style="font-size:12px;color:#888;margin-bottom:6px">체크인 완료</div>
+    <div id="popup-brand-name" style="font-size:16px;font-weight:600;color:#1a1a2e;margin-bottom:12px"></div>
+    <div id="popup-pair" style="font-size:12px;color:#b06000;background:#fff3e0;padding:4px 10px;border-radius:6px;margin-bottom:12px;display:none"></div>
+    <div style="font-size:13px;color:#888;margin-bottom:4px">안내 테이블</div>
+    <div id="popup-table-num" style="font-size:32px;font-weight:700;color:#1a56a0;margin-bottom:16px"></div>
+    <button onclick="closeTablePopup()" style="padding:8px 24px;background:#1a56a0;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;width:100%">확인</button>
+    <div style="font-size:11px;color:#ccc;margin-top:8px">5초 후 자동으로 닫힙니다</div>
+  </div>
+</div>
+
 <!-- 체크인 취소 확인 모달 -->
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
@@ -303,17 +316,18 @@ async function checkIn(id){
   const b=getBrand(id);
   if(!b||b.checked)return;
 
-  // 낙관적 업데이트 (즉시 반영)
   b.checked=true;b.attending=true;
   let pairedMsg='';
+  let pairedTable='';
   if(b.pairRole==='primary'&&b.pairedId){
     const paired=getBrand(b.pairedId);
-    if(paired){paired.checked=true;paired.attending=true;pairedMsg=' + '+b.pairedName;}
+    if(paired){paired.checked=true;paired.attending=true;pairedMsg=paired.name;}
   }
   refresh();
-  toast('체크인 완료 · '+b.name+pairedMsg);
 
-  // 서버 기록
+  // 테이블 안내 팝업
+  showTablePopup(b, pairedMsg);
+
   if(SCRIPT_URL){
     try{
       await fetch(SCRIPT_URL+'?action=checkIn&id='+b.id+'&name='+encodeURIComponent(b.name)+'&device='+DEVICE_ID);
@@ -321,8 +335,39 @@ async function checkIn(id){
         const paired=getBrand(b.pairedId);
         if(paired) await fetch(SCRIPT_URL+'?action=checkIn&id='+paired.id+'&name='+encodeURIComponent(paired.name)+'&device='+DEVICE_ID);
       }
-    } catch(e){toast('서버 기록 실패 — 로컬에만 반영됨');}
+    } catch(e){}
   }
+}
+
+function showTablePopup(b, pairedName){
+  const table=b.table||'';
+  const overlay=document.getElementById('table-popup-bg');
+  const nameEl=document.getElementById('popup-brand-name');
+  const tableEl=document.getElementById('popup-table-num');
+  const pairEl=document.getElementById('popup-pair');
+
+  nameEl.textContent=b.name;
+  if(table){
+    tableEl.textContent=table;
+    tableEl.style.display='block';
+  } else {
+    tableEl.style.display='none';
+  }
+  if(pairedName){
+    pairEl.textContent='+ '+pairedName+' 함께 수상';
+    pairEl.style.display='block';
+  } else {
+    pairEl.style.display='none';
+  }
+  overlay.classList.add('show');
+  // 5초 후 자동 닫기
+  clearTimeout(window._popupTimer);
+  window._popupTimer=setTimeout(()=>closeTablePopup(),5000);
+}
+
+function closeTablePopup(){
+  document.getElementById('table-popup-bg').classList.remove('show');
+  clearTimeout(window._popupTimer);
 }
 
 function reqCancel(id){
@@ -425,18 +470,76 @@ function goPage(p){curPage=p;renderCheckin();}
 function buildGroups(list){
   const visible=list.filter(b=>b.pairRole!=='secondary');
   const sorted=[...visible].sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-  const groups=[];let i=0;
+  const groups=[];
+  let i=0;
   while(i<sorted.length){
     const rem=sorted.length-i;
-    if(rem<=8){
-      if(rem===9){groups.push(sorted.slice(i,i+5));groups.push(sorted.slice(i+5));}
+    if(rem<=15){
+      if(rem<=8){groups.push(sorted.slice(i));}
+      else if(rem===9){groups.push(sorted.slice(i,i+5));groups.push(sorted.slice(i+5));}
       else if(rem===10){groups.push(sorted.slice(i,i+5));groups.push(sorted.slice(i+5));}
-      else{groups.push(sorted.slice(i));}
+      else if(rem===11){groups.push(sorted.slice(i,i+6));groups.push(sorted.slice(i+6));}
+      else if(rem===12){groups.push(sorted.slice(i,i+6));groups.push(sorted.slice(i+6));}
+      else if(rem===13){groups.push(sorted.slice(i,i+7));groups.push(sorted.slice(i+7));}
+      else if(rem===14){groups.push(sorted.slice(i,i+7));groups.push(sorted.slice(i+7));}
+      else if(rem===15){groups.push(sorted.slice(i,i+8));groups.push(sorted.slice(i+8));}
       break;
     }
     groups.push(sorted.slice(i,i+8));i+=8;
   }
   return groups;
+}
+
+// 당일 추가 브랜드 테이블 자동 배정
+function autoAssignTable(brand){
+  const deptBrands=brands.filter(b=>b.dept===brand.dept&&b.attending&&b.pairRole!=='secondary');
+  const groups=buildGroups(deptBrands);
+  
+  // 새 브랜드가 가나다순으로 어느 그룹에 들어가는지 파악
+  const allSorted=[...deptBrands,brand].filter(b=>b.pairRole!=='secondary')
+    .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const brandIdx=allSorted.findIndex(b=>b.id===brand.id);
+  
+  // 그룹 경계 계산
+  let groupIdx=0, cumulative=0;
+  const tempGroups=buildGroups([...deptBrands,brand].filter(b=>b.pairRole!=='secondary'));
+  for(let g=0;g<tempGroups.length;g++){
+    cumulative+=tempGroups[g].length;
+    if(brandIdx<cumulative){groupIdx=g;break;}
+  }
+  
+  // 해당 그룹의 사전신청 브랜드들 테이블 번호 파악
+  const groupBrands=groups[groupIdx]||groups[groups.length-1];
+  const tableNums=groupBrands
+    .filter(b=>b.table&&b.table.trim()!=='')
+    .map(b=>b.table.trim());
+  
+  if(!tableNums.length) return null;
+  
+  // 가장 많이 등장하는 테이블 번호 = 해당 그룹 테이블
+  const freq={};
+  tableNums.forEach(t=>{freq[t]=(freq[t]||0)+1;});
+  const groupTable=Object.keys(freq).sort((a,b)=>freq[b]-freq[a])[0];
+  
+  // 해당 테이블 현재 인원 (사전신청 + 이미 배정된 당일추가)
+  const tableCount=brands.filter(b=>
+    b.attending && b.table===groupTable && b.pairRole!=='secondary'
+  ).length;
+  
+  if(tableCount<10){
+    return groupTable;
+  } else {
+    // 다음 테이블 찾기
+    const nextGroupBrands=groups[groupIdx+1];
+    if(!nextGroupBrands||!nextGroupBrands.length) return groupTable;
+    const nextTableNums=nextGroupBrands
+      .filter(b=>b.table&&b.table.trim()!=='')
+      .map(b=>b.table.trim());
+    if(!nextTableNums.length) return groupTable;
+    const freq2={};
+    nextTableNums.forEach(t=>{freq2[t]=(freq2[t]||0)+1;});
+    return Object.keys(freq2).sort((a,b)=>freq2[b]-freq2[a])[0];
+  }
 }
 
 function renderSection(){
@@ -507,11 +610,17 @@ function selectBrand(id){
     preview.style.color='#b84040';
     preview.innerHTML='이미 신청 목록에 있는 브랜드입니다.';
   } else {
+    // 테이블 자동 배정
+    const assignedTable=autoAssignTable(b);
+    selectedBrand._assignedTable=assignedTable;
     preview.style.display='block';
     preview.style.background='#f0faf4';
     preview.style.border='1px solid #a8d5b8';
     preview.style.color='#1a7a3c';
-    preview.innerHTML='<strong>'+b.name+'</strong> · '+( DEPT_LABELS[b.dept]||b.dept)+' · 300대 브랜드 확인됨<br><span style="font-size:11px;opacity:.8">테이블은 구글 시트에서 지정해주세요</span>';
+    const tableInfo=assignedTable
+      ?'<br><strong style="font-size:15px;color:#1a56a0">→ '+assignedTable+' 테이블</strong>'
+      :'<br><span style="font-size:11px;opacity:.8">테이블은 구글 시트에서 지정해주세요</span>';
+    preview.innerHTML='<strong>'+b.name+'</strong> · '+(DEPT_LABELS[b.dept]||b.dept)+' · 300대 브랜드 확인됨'+tableInfo;
   }
 }
 
@@ -520,19 +629,23 @@ async function doAdd(){
   if(!selectedBrand){showMsg(res,'ng','브랜드명을 입력하고 목록에서 선택해주세요.');return;}
   if(selectedBrand.attending){showMsg(res,'ng','"'+selectedBrand.name+'"은 이미 신청 목록에 있습니다.');return;}
 
+  const assignedTable=selectedBrand._assignedTable||'';
   selectedBrand.attending=true;
+  selectedBrand.table=assignedTable;
   refresh();
   document.getElementById('add-name').value='';
   document.getElementById('add-preview').style.display='none';
-  showMsg(res,'ok','"'+selectedBrand.name+'" 추가 완료 · 테이블은 구글 시트에서 지정해주세요.');
-  toast(selectedBrand.name+' 추가 완료');
+
+  const tableMsg=assignedTable?' · '+assignedTable+' 테이블로 안내해주세요':'';
+  showMsg(res,'ok','"'+selectedBrand.name+'" 추가 완료'+tableMsg);
+  toast(selectedBrand.name+' 추가 완료'+(assignedTable?' → '+assignedTable:''));
 
   if(SCRIPT_URL){
     try{
       await fetch(SCRIPT_URL+'?action=addBrand&id='+selectedBrand.id
         +'&name='+encodeURIComponent(selectedBrand.name)
         +'&dept='+encodeURIComponent(selectedBrand.dept)
-        +'&table='+encodeURIComponent(selectedBrand.table||'')
+        +'&table='+encodeURIComponent(assignedTable)
         +'&device='+DEVICE_ID);
     }catch(e){}
   }
